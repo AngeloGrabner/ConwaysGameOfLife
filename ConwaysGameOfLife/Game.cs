@@ -19,7 +19,7 @@ class Game
         _utility = new(_width);
         ExConsole.SetMaximumBufferSize((short)(_width), (short)(_height));
         ExConsole.SetBufferSize((short)(_width), (short)(_height));
-        ExConsole.SetWindowSize(_width+2, _height + 3, true); 
+        ExConsole.SetWindowSize(1300,1300); 
 
         ExConsole.SetFont(10, 10);
         ExConsole.SetCursorVisiblity(false);
