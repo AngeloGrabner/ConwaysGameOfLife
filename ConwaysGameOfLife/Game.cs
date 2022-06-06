@@ -1,19 +1,20 @@
 ﻿using ExtendedWinConsole;
-class Game
+class Game // to be added: reading and writing gamestate to files
 {
     bool _isEditing = true, _isRunning = true;
     char _inputChar;
     short _width, _height;
     CHAR_INFO[] _dGameBoard;
     bool[] _lGameBoard;
-    int _playerX, _playerY;
+    int _playerX, _playerY, _delay;
     Utility _utility;
-    public Game(short width = 100, short height = 50)
+    public Game(short width = 100, short height = 50, int delay = 100)
     {
-        if (width < ExConsole.MinWidth || height < ExConsole.MinHeight)
+        if (width < ExConsole.MinWidth || height < ExConsole.MinHeight ||delay < 0)
         {
-            throw new ArgumentException("width or height");
+            throw new ArgumentException("width or height or delay");
         }
+        _delay = delay;
         _width = width;
         _height = height;
         _utility = new(_width);
@@ -21,7 +22,7 @@ class Game
         ExConsole.SetBufferSize((short)(_width), (short)(_height));
         ExConsole.SetWindowSize(1300,1300); 
 
-        ExConsole.SetFont(10, 10);
+        ExConsole.SetFont(8, 8);
         ExConsole.SetCursorVisiblity(false);
         _dGameBoard = ExConsole.OutputBuffer;
         _lGameBoard = new bool[_dGameBoard.Length];
@@ -163,7 +164,7 @@ class Game
         {
             UpdateBoard();
             DrawBoard();
-            //Thread.Sleep(50);
+            Thread.Sleep(_delay);
         }
         _isRunning = false; 
         thd.Join();
