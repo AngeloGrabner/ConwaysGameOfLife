@@ -2,13 +2,13 @@
 class Game // to be added: reading and writing gamestate to files
 {
     bool _isEditing = true, _isRunning = true;
-    char _inputChar;
+    char _inputChar, _pausePlayBack = ' ',_cahngeLiveStateChar = ' ', _endChar = '\r';
     short _width, _height;
     CHAR_INFO[] _dGameBoard;
     bool[] _lGameBoard;
-    int _playerX, _playerY, _delay;
+    int _playerX, _playerY, _delay, _interation = 0;
     Utility _utility;
-    public Game(short width = 100, short height = 50, int delay = 100)
+    public Game(short width = 100, short height = 50, int delay = 500)
     {
         if (width < ExConsole.MinWidth || height < ExConsole.MinHeight ||delay < 0)
         {
@@ -20,9 +20,9 @@ class Game // to be added: reading and writing gamestate to files
         _utility = new(_width);
         ExConsole.SetMaximumBufferSize((short)(_width), (short)(_height));
         ExConsole.SetBufferSize((short)(_width), (short)(_height));
-        ExConsole.SetWindowSize(1300,1300); 
-
-        ExConsole.SetFont(8, 8);
+        ExConsole.SetWindowSize(1300,1300);
+        DisplayGameInfo();
+        ExConsole.SetFont(12, 12);
         ExConsole.SetCursorVisiblity(false);
         _dGameBoard = ExConsole.OutputBuffer;
         _lGameBoard = new bool[_dGameBoard.Length];
@@ -33,17 +33,17 @@ class Game // to be added: reading and writing gamestate to files
         _playerX = width / 2;
         _playerY = height / 2;
     }
-    public void Run()
+    public void RunEditor()
     {
-        DisplayGameInfo();
+        _isEditing = true;
         while (true)
         {
             _inputChar = GetInput();
-            if (_inputChar == 'e')
+            if (_inputChar == _endChar)
             {
                 break;
             }
-            else if (_inputChar == 'q')
+            else if (_inputChar == _cahngeLiveStateChar)
             {
                 ChangeLiefeStatus();
             }
@@ -53,7 +53,6 @@ class Game // to be added: reading and writing gamestate to files
             }
             DrawBoard();
         }
-        RunGame();
     }
     char GetInput()
     { 
@@ -89,9 +88,9 @@ class Game // to be added: reading and writing gamestate to files
             _playerY += y;
         }
     }
-    void DisplayGameInfo()
+    public void DisplayGameInfo()
     {
-        ExConsole.WriteLine("controls:\nuse 'W A S D' to move\nuse 'Q' to change the life status of a cell\nuse 'E' to start the game\npress any key to start");
+        ExConsole.WriteLine("controls:\nuse 'W A S D' to move\nuse 'Space' to change the life status of a cell\nuse 'Enter' to start the game\nuse 'Q' and 'E' to change the playback speed\nuse 'Space' to pause playback\npress any key to start");
         ExConsole.ReadKey();
         ExConsole.Clear(false);
     }
@@ -138,8 +137,10 @@ class Game // to be added: reading and writing gamestate to files
                 _dGameBoard[i].UnicodeChar = '\u2588';
             }
         }
+        DrawBorder();
         if (_isEditing)
         {
+            Console.Title = "Game of Life";
             int playerPos = _utility.Convert2dTo1d(_playerX, _playerY);
             _dGameBoard[playerPos].UnicodeChar = 'X';
             if (_lGameBoard[playerPos])
@@ -151,23 +152,41 @@ class Game // to be added: reading and writing gamestate to files
                 _dGameBoard[playerPos].Attributes = (ushort)ConsoleColor.Red;
             }
         }
-        DrawBorder();
+        else
+        {
+            Console.Title = $"Game of Life Speed: {_delay}ms Interation: {_interation}"; 
+        }
         ExConsole.UpdateBuffer();
     }
-    void RunGame()
+    public void RunGame()
     {
+        _interation = 0;
         _isEditing = false;
         Thread thd = new Thread(new ThreadStart(GetInputAsync));
         thd.Start();
-        _inputChar = ' ';
-        while (_inputChar != 'e')
+        _inputChar = '_';
+        while (_inputChar != _endChar)
         {
+            while (_inputChar == _pausePlayBack)
+            {
+                Thread.Sleep(500);
+            }
+            if (_inputChar == 'q' && _delay >= 20)
+            {
+                _delay -= 20;
+            }
+            else if (_inputChar == 'e' && _delay < 1000)
+            {
+                _delay += 20;
+            }
+
+            _interation++;
             UpdateBoard();
             DrawBoard();
             Thread.Sleep(_delay);
         }
         _isRunning = false; 
-        thd.Join();
+        thd.Join();   
     }
     void GetInputAsync()
     {
