@@ -1,8 +1,10 @@
 ﻿using ExtendedWinConsole;
+using System.IO;
+using System.Text;
 class Game // to be added: reading and writing gamestate to files
 {
-    bool _isEditing = true, _isRunning = true;
-    char _inputChar, _pausePlayBack = ' ',_cahngeLiveStateChar = ' ', _endChar = '\r';
+    bool _isEditing = true, _isRunning = true, _newInput = false;
+    char _inputChar, _cahngeLiveStateChar = ' ', _endChar = '\r';
     short _width, _height;
     CHAR_INFO[] _dGameBoard;
     bool[] _lGameBoard;
@@ -53,6 +55,7 @@ class Game // to be added: reading and writing gamestate to files
             }
             DrawBoard();
         }
+        ExConsole.Clear();
     }
     char GetInput()
     { 
@@ -160,41 +163,46 @@ class Game // to be added: reading and writing gamestate to files
     }
     public void RunGame()
     {
-        _interation = 0;
         _isEditing = false;
         Thread thd = new Thread(new ThreadStart(GetInputAsync));
         thd.Start();
-        _inputChar = '_';
-        while (_inputChar != _endChar)
+        char inputNew = GetNewInput();
+        do
         {
-            while (_inputChar == _pausePlayBack)
-            {
-                Thread.Sleep(500);
-            }
-            if (_inputChar == 'q' && _delay >= 20)
+            inputNew = GetNewInput();
+            if (inputNew == 'q' && _delay >= 20)
             {
                 _delay -= 20;
             }
-            else if (_inputChar == 'e' && _delay < 1000)
+            else if (inputNew == 'e' && _delay < 1000)
             {
                 _delay += 20;
             }
-
             _interation++;
             UpdateBoard();
             DrawBoard();
             Thread.Sleep(_delay);
-        }
+        } while (inputNew != _endChar);
         _isRunning = false; 
-        thd.Join();   
+        thd.Join();
+        ExConsole.Clear();
     }
-    void GetInputAsync()
+    void GetInputAsync() 
     {
         while (_isRunning)
         {
             _inputChar = ExConsole.ReadKey().KeyChar;
-            Thread.Sleep(100);
+            _newInput = true;
         }
+    }
+    char GetNewInput()
+    {
+        if (_newInput)
+        {
+            _newInput = false;
+            return _inputChar;
+        }
+        return '\0';
     }
     void UpdateBoard()
     {
@@ -252,5 +260,74 @@ class Game // to be added: reading and writing gamestate to files
             }
         }
         return aliveCount;
+    }
+    public bool LoadFile(string path)
+    {
+        if (!File.Exists(path))
+        {
+            return false;
+        }
+        string[] text = File.ReadAllLines(path);
+        _height = (short)text.Length;
+        _width = (short)text[0].Length;
+        _dGameBoard = new CHAR_INFO[_width * _height];
+        _lGameBoard = new bool[_dGameBoard.Length];
+        for (int i = 0; i < text.Length; i++)
+        {
+            for (int j = 0; j < text[i].Length; j++)
+            {
+                if (text[i][j] != '\n')
+                {
+                    continue;
+                }
+                else if (text[i][j] != ' ')
+                {
+                    _lGameBoard[_utility.Convert2dTo1d(j,i)] = true;
+                }
+                else
+                {
+                    _lGameBoard[_utility.Convert2dTo1d(j, i)] = false;
+                }
+            }
+        }
+        ExConsole.SetMaximumBufferSize((short)(_width), (short)(_height));
+        ExConsole.SetBufferSize((short)(_width), (short)(_height));
+        return true;
+    }
+    public string SafeFlie(string path, bool fileAlreadyExists = false)
+    {
+        if (!fileAlreadyExists)
+        {
+            Random random = new Random();
+            if (path[path.Length - 1] == '\\')
+            {
+                path += random.Next().ToString()+".txt";
+            }
+            else
+            {
+                path += "\\"+random.Next().ToString() + ".txt";
+            }
+        }
+        using (FileStream fs = File.Open(path, FileMode.Create))
+        {
+            List<char> cBuffer = new List<char>();
+            for (int i = 0; i < _lGameBoard.Length; i++)
+            {
+                if (i%_width==0)
+                {
+                    cBuffer.Add('\n');
+                }
+                if (_lGameBoard[i])
+                {
+                    cBuffer.Add('X');
+                }
+                else
+                {
+                    cBuffer.Add(' ');
+                }
+            }
+            fs.Write(Encoding.Default.GetBytes(cBuffer.ToArray(),0,cBuffer.Count));
+        }
+        return path;
     }
 }
