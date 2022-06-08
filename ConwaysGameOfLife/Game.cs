@@ -270,19 +270,21 @@ class Game // to be added: reading and writing gamestate to files
         string[] text = File.ReadAllLines(path);
         _height = (short)text.Length;
         _width = (short)text[0].Length;
-        _dGameBoard = new CHAR_INFO[_width * _height];
+        ExConsole.SetMaximumBufferSize((short)(_width), (short) (_height));
+        ExConsole.SetBufferSize((short)(_width), (short) (_height));
+        _dGameBoard = ExConsole.OutputBuffer;
         _lGameBoard = new bool[_dGameBoard.Length];
         for (int i = 0; i < text.Length; i++)
         {
             for (int j = 0; j < text[i].Length; j++)
             {
-                if (text[i][j] != '\n')
+                if (text[i][j] == '\n')
                 {
                     continue;
                 }
                 else if (text[i][j] != ' ')
                 {
-                    _lGameBoard[_utility.Convert2dTo1d(j,i)] = true;
+                    _lGameBoard[_utility.Convert2dTo1d(j, i)] = true;
                 }
                 else
                 {
@@ -290,8 +292,6 @@ class Game // to be added: reading and writing gamestate to files
                 }
             }
         }
-        ExConsole.SetMaximumBufferSize((short)(_width), (short)(_height));
-        ExConsole.SetBufferSize((short)(_width), (short)(_height));
         return true;
     }
     public string SafeFlie(string path, bool fileAlreadyExists = false)
@@ -313,7 +313,7 @@ class Game // to be added: reading and writing gamestate to files
             List<char> cBuffer = new List<char>();
             for (int i = 0; i < _lGameBoard.Length; i++)
             {
-                if (i%_width==0)
+                if (i != 0 && i%_width==0)
                 {
                     cBuffer.Add('\n');
                 }

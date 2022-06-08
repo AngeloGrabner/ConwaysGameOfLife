@@ -104,14 +104,17 @@ namespace ExtendedWinConsole
             conscreenbufinex.cbSize = (uint)Marshal.SizeOf<CONSOLE_SCREEN_BUFFER_INFO_EX>();
             if (!NativeFunc.GetConsoleScreenBufferInfoEx(_outputHandle, ref conscreenbufinex))
             {
-
                 throw new Exception("error while getting buffer info " + Marshal.GetLastWin32Error());
             }
-            if (width <= 0 || heith <= 0)
+            if ( heith <= 0)
             {
-                throw new ArgumentException();
+                throw new ArgumentException("height");
             }
-            
+            if (width <= 0 )
+            {
+                throw new ArgumentException("width");
+            }
+
             conscreenbufinex.dwSize = new COORD(width, heith);
             if (!NativeFunc.SetConsoleScreenBufferInfoEx(_outputHandle, ref conscreenbufinex))
             {
